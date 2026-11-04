@@ -1,5 +1,6 @@
 import './style.css';
 import { Input, ALL_FORMATS, BlobSource, AudioSampleSink } from 'mediabunny';
+import { toSrt } from './subtitles.js';
 
 const fileInput = document.querySelector('#file-input');
 const dropZone = document.querySelector('#drop-zone');
@@ -9,6 +10,7 @@ const fileMeta = document.querySelector('#file-meta');
 const transcribeButton = document.querySelector('#transcribe');
 const copyButton = document.querySelector('#copy');
 const exportButton = document.querySelector('#export');
+const exportSrtButton = document.querySelector('#export-srt');
 const status = document.querySelector('#status');
 const empty = document.querySelector('#transcript-empty');
 const list = document.querySelector('#transcript-list');
@@ -74,6 +76,7 @@ function setFile(file) {
   transcribeButton.textContent = 'Transcribe';
   copyButton.disabled = true;
   exportButton.disabled = true;
+  exportSrtButton.disabled = true;
 }
 
 function renderSegments() {
@@ -109,6 +112,7 @@ function renderSegments() {
   lineCount.textContent = `${segments.length} ${segments.length === 1 ? 'segment' : 'segments'}`;
   copyButton.disabled = false;
   exportButton.disabled = false;
+  exportSrtButton.disabled = false;
 }
 
 function syncActive() {
@@ -260,4 +264,14 @@ exportButton.addEventListener('click', () => {
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   status.textContent = 'Transcript exported.';
+});
+exportSrtButton.addEventListener('click', () => {
+  const blob = new Blob([toSrt(segments, video.duration)], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${selectedFile.name.replace(/\.[^.]+$/, '')}-subtitles.srt`;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  status.textContent = 'SRT subtitles exported.';
 });
