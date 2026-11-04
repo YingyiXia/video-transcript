@@ -1,0 +1,18 @@
+{
+  "name": "video-transcript",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "mediabunny": "^1.65.0"
+  },
+  "devDependencies": {
+    "vite": "7.1.11"
+  }
+}
