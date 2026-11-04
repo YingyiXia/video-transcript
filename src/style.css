@@ -40,6 +40,10 @@ button:disabled { cursor: not-allowed; }
 .segment-text { font-size: 14px; color: #363c36; user-select: text; cursor: text; white-space: pre-wrap; overflow-wrap: anywhere; }
 .segment.active .segment-text { color: #1d3728; }
 .transcript-footer { margin-top: auto; border-top: 1px solid #e6e8e3; padding: 17px 24px 23px; }
+.mode-picker { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; color: #59645b; font-size: 12px; }
+.mode-picker > span { color: #899089; margin-right: 2px; }
+.mode-picker label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.mode-picker input { accent-color: #376c52; margin: 0; }
 .transcript-footer p { min-height: 19px; margin: 0 0 16px; color: #7f877f; font-size: 12px; }
 .progress-wrap { margin: -4px 0 17px; }
 .progress-label { display: flex; justify-content: space-between; gap: 12px; color: #4b584e; font-size: 12px; font-variant-numeric: tabular-nums; }
