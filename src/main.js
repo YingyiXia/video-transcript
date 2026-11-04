@@ -21,6 +21,7 @@ const progressValue = document.querySelector('#progress-value');
 const progressBar = document.querySelector('#progress-bar');
 const progressEta = document.querySelector('#progress-eta');
 const modeInputs = document.querySelectorAll('input[name="audio-mode"]');
+const modeOptions = document.querySelector('.mode-options');
 
 let selectedFile;
 let videoUrl;
@@ -33,14 +34,23 @@ function setProgress(stage, percent, eta = '') {
   progressWrap.hidden = false;
   progressStage.textContent = stage;
   progressValue.textContent = Number.isFinite(percent) ? `${Math.round(percent)}%` : '';
-  if (Number.isFinite(percent)) progressBar.value = Math.max(0, Math.min(100, percent));
-  else progressBar.removeAttribute('value');
+  if (Number.isFinite(percent)) {
+    const value = Math.max(0, Math.min(100, percent));
+    progressBar.classList.remove('indeterminate');
+    progressBar.style.setProperty('--progress', `${value}%`);
+    progressBar.setAttribute('aria-valuenow', String(Math.round(value)));
+  } else {
+    progressBar.classList.add('indeterminate');
+    progressBar.removeAttribute('aria-valuenow');
+  }
   progressEta.textContent = eta;
 }
 
 function hideProgress() {
   progressWrap.hidden = true;
-  progressBar.removeAttribute('value');
+  progressBar.classList.remove('indeterminate');
+  progressBar.style.setProperty('--progress', '0%');
+  progressBar.removeAttribute('aria-valuenow');
   progressEta.textContent = '';
 }
 
@@ -242,6 +252,8 @@ function transcriptText() {
 fileInput.addEventListener('change', () => setFile(fileInput.files[0]));
 changeFile.addEventListener('click', () => fileInput.click());
 modeInputs.forEach((input) => input.addEventListener('change', () => {
+  if (!input.checked) return;
+  modeOptions.dataset.mode = input.value;
   runId++;
   worker?.terminate();
   worker = undefined;
