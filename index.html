@@ -45,11 +45,11 @@
             <div id="transcript-empty" class="transcript-empty"><p>Your transcript will appear here.</p></div>
             <div id="transcript-list" class="transcript-list" role="list" hidden></div>
             <div class="transcript-footer">
-              <div class="mode-picker" role="group" aria-label="Audio type"><span>Audio type</span><label><input type="radio" name="audio-mode" value="speech" checked /> Speech</label><label><input type="radio" name="audio-mode" value="music" /> Music / lyrics</label></div>
+              <div class="mode-picker" role="group" aria-label="Audio type"><span>Audio type</span><div class="mode-options" data-mode="speech"><span class="mode-indicator" aria-hidden="true"></span><label><input type="radio" name="audio-mode" value="speech" checked /> Speech</label><label><input type="radio" name="audio-mode" value="music" /> Music / lyrics</label></div></div>
               <p id="status" role="status" aria-live="polite">Choose a video to begin.</p>
               <div id="progress-wrap" class="progress-wrap" hidden>
                 <div class="progress-label"><span id="progress-stage">Preparing audio</span><span id="progress-value"></span></div>
-                <progress id="progress-bar" max="100" aria-label="Transcription progress"></progress>
+                <div id="progress-bar" class="progress-track" role="progressbar" aria-label="Transcription progress" aria-valuemin="0" aria-valuemax="100"><span class="progress-fill"></span></div>
                 <span id="progress-eta" class="progress-eta"></span>
               </div>
               <div class="actions">
