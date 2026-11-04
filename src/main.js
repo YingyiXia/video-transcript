@@ -13,12 +13,33 @@ const status = document.querySelector('#status');
 const empty = document.querySelector('#transcript-empty');
 const list = document.querySelector('#transcript-list');
 const lineCount = document.querySelector('#line-count');
+const progressWrap = document.querySelector('#progress-wrap');
+const progressStage = document.querySelector('#progress-stage');
+const progressValue = document.querySelector('#progress-value');
+const progressBar = document.querySelector('#progress-bar');
+const progressEta = document.querySelector('#progress-eta');
 
 let selectedFile;
 let videoUrl;
 let segments = [];
 let activeIndex = -1;
 let worker;
+let runId = 0;
+
+function setProgress(stage, percent, eta = '') {
+  progressWrap.hidden = false;
+  progressStage.textContent = stage;
+  progressValue.textContent = Number.isFinite(percent) ? `${Math.round(percent)}%` : '';
+  if (Number.isFinite(percent)) progressBar.value = Math.max(0, Math.min(100, percent));
+  else progressBar.removeAttribute('value');
+  progressEta.textContent = eta;
+}
+
+function hideProgress() {
+  progressWrap.hidden = true;
+  progressBar.removeAttribute('value');
+  progressEta.textContent = '';
+}
 
 function formatTime(seconds) {
   const safe = Math.max(0, Math.floor(seconds || 0));
@@ -30,8 +51,10 @@ function setFile(file) {
     status.textContent = 'Choose a video file.';
     return;
   }
+  runId++;
   worker?.terminate();
   worker = undefined;
+  hideProgress();
   if (videoUrl) URL.revokeObjectURL(videoUrl);
   selectedFile = file;
   videoUrl = URL.createObjectURL(file);
@@ -143,22 +166,30 @@ async function extractAudio(file) {
 
 async function transcribe() {
   if (!selectedFile) return;
+  const thisRun = ++runId;
   transcribeButton.disabled = true;
   transcribeButton.textContent = 'Transcribing…';
   status.textContent = 'Reading audio from video…';
+  setProgress('Preparing audio', NaN);
   try {
     const audio = await extractAudio(selectedFile);
+    if (thisRun !== runId) return;
+    setProgress('Loading speech model', NaN);
     worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
     worker.onmessage = ({ data }) => {
+      if (thisRun !== runId) return;
       if (data.type === 'status') status.textContent = data.message;
+      if (data.type === 'progress') setProgress(data.stage, data.percent, data.eta || '');
       if (data.type === 'error') {
         status.textContent = `Transcription failed: ${data.message}`;
+        hideProgress();
         transcribeButton.disabled = false;
         transcribeButton.textContent = 'Try again';
         worker?.terminate();
         worker = undefined;
       }
       if (data.type === 'result') {
+        hideProgress();
         segments = (data.result.chunks || [])
           .map((chunk) => ({ start: Number(chunk.timestamp?.[0]) || 0, end: Number(chunk.timestamp?.[1]) || video.duration || 0, text: chunk.text.trim() }))
           .filter((chunk) => chunk.text);
@@ -179,7 +210,9 @@ async function transcribe() {
       }
     };
     worker.onerror = () => {
+      if (thisRun !== runId) return;
       status.textContent = 'Transcription failed. Try again.';
+      hideProgress();
       transcribeButton.disabled = false;
       transcribeButton.textContent = 'Try again';
       worker?.terminate();
@@ -187,7 +220,9 @@ async function transcribe() {
     };
     worker.postMessage({ audio, sampleRate: 16000 }, [audio.buffer]);
   } catch (error) {
+    if (thisRun !== runId) return;
     status.textContent = 'Could not read audio. Try an MP4 (H.264/AAC) or WebM file.';
+    hideProgress();
     transcribeButton.disabled = false;
     transcribeButton.textContent = 'Try again';
   }
