@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f7f4" />
+    <meta name="description" content="Turn video speech into a transcript you can read, select, copy, and export." />
+    <title>Transcript — Video to text</title>
+    <style>
+      .file-preview-note { display: none; }
+      body.file-preview { margin: 0; background: #f7f7f4; color: #20231f; font-family: Arial, sans-serif; }
+      body.file-preview #app { display: none; }
+      body.file-preview .file-preview-note { display: block; max-width: 520px; margin: 18vh auto; padding: 0 24px; }
+      .file-preview-note h1 { font-size: 30px; letter-spacing: -.04em; }
+      .file-preview-note p { color: #687168; line-height: 1.6; }
+    </style>
+    <script>if (location.protocol === 'file:') document.addEventListener('DOMContentLoaded', () => document.body.classList.add('file-preview'));</script>
+  </head>
+  <body>
+    <div class="file-preview-note"><h1>Open the preview</h1><p>Double-click <strong>Open Website.command</strong> in this folder to launch the working website.</p></div>
+    <div id="app">
+      <header class="site-header">
+        <a class="brand" href="./" aria-label="Transcript home">Transcript<span class="brand-period">.</span></a>
+        <span class="header-note">Video to text, in your browser</span>
+      </header>
+      <main>
+        <div class="page-intro">
+          <h1>Watch it. Read it.</h1>
+          <p>Upload a video to turn speech into a transcript that follows playback.</p>
+        </div>
+        <section class="workspace" aria-label="Video transcription workspace">
+          <div class="video-column">
+            <div class="column-heading"><h2>Video</h2><span id="file-meta">No file selected</span></div>
+            <label id="drop-zone" class="drop-zone" for="file-input">
+              <span class="upload-icon" aria-hidden="true">+</span>
+              <strong>Choose a video</strong>
+              <small>or drop one here</small>
+            </label>
+            <input id="file-input" type="file" accept="video/*" hidden />
+            <video id="video" controls playsinline hidden></video>
+            <div class="video-footer"><button id="change-file" class="plain-button" type="button" hidden>Change video</button><span>Your video stays on this device.</span></div>
+          </div>
+          <div class="transcript-column">
+            <div class="column-heading"><h2>Transcript</h2><span id="line-count">Waiting for video</span></div>
+            <div id="transcript-empty" class="transcript-empty"><p>Your transcript will appear here.</p></div>
+            <div id="transcript-list" class="transcript-list" role="list" hidden></div>
+            <div class="transcript-footer">
+              <p id="status" role="status" aria-live="polite">Choose a video to begin.</p>
+              <div class="actions">
+                <button id="transcribe" class="primary-button" type="button" disabled>Transcribe</button>
+                <button id="copy" class="secondary-button" type="button" disabled>Copy all</button>
+                <button id="export" class="secondary-button" type="button" disabled>Export .txt</button>
+              </div>
+            </div>
+          </div>
+        </section>
+        <p class="help-note">Speech only. The first transcription needs an internet connection to download the model. Long videos may take more time and memory.</p>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
