@@ -45,6 +45,7 @@
             <div id="transcript-empty" class="transcript-empty"><p>Your transcript will appear here.</p></div>
             <div id="transcript-list" class="transcript-list" role="list" hidden></div>
             <div class="transcript-footer">
+              <div class="mode-picker" role="group" aria-label="Audio type"><span>Audio type</span><label><input type="radio" name="audio-mode" value="speech" checked /> Speech</label><label><input type="radio" name="audio-mode" value="music" /> Music / lyrics</label></div>
               <p id="status" role="status" aria-live="polite">Choose a video to begin.</p>
               <div id="progress-wrap" class="progress-wrap" hidden>
                 <div class="progress-label"><span id="progress-stage">Preparing audio</span><span id="progress-value"></span></div>
@@ -60,7 +61,7 @@
             </div>
           </div>
         </section>
-        <p class="help-note">Speech only. The first transcription needs an internet connection to download the model. Long videos may take more time and memory.</p>
+        <p class="help-note">Music mode separates vocals with Demucs, then transcribes with Whisper. Models download on first use. Processing happens on your device; long videos need more time and memory.</p>
       </main>
     </div>
     <script type="module" src="/src/main.js"></script>
