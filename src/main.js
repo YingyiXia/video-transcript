@@ -20,6 +20,7 @@ const progressStage = document.querySelector('#progress-stage');
 const progressValue = document.querySelector('#progress-value');
 const progressBar = document.querySelector('#progress-bar');
 const progressEta = document.querySelector('#progress-eta');
+const modeInputs = document.querySelectorAll('input[name="audio-mode"]');
 
 let selectedFile;
 let videoUrl;
@@ -128,7 +129,7 @@ function syncActive() {
   if (element && !video.paused) element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
-async function extractAudio(file) {
+async function extractAudio(file, music = false) {
   const input = new Input({ formats: ALL_FORMATS, source: new BlobSource(file) });
   const track = await input.getPrimaryAudioTrack();
   if (!track || !await track.canDecode()) throw new Error('Audio track unavailable');
@@ -137,32 +138,30 @@ async function extractAudio(file) {
   let totalFrames = 0;
   for await (const sample of sink.samples()) {
     const buffer = sample.toAudioBuffer();
-    const mono = new Float32Array(buffer.length);
-    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-      const values = buffer.getChannelData(channel);
-      for (let frame = 0; frame < values.length; frame++) mono[frame] += values[frame] / buffer.numberOfChannels;
-    }
-    chunks.push(mono);
-    totalFrames += mono.length;
+    const left = buffer.getChannelData(0).slice();
+    const right = (buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : buffer.getChannelData(0)).slice();
+    chunks.push([left, right]);
+    totalFrames += left.length;
     sample.close();
   }
   if (!totalFrames) throw new Error('No audio samples');
   const context = new AudioContext();
   try {
-    const buffer = context.createBuffer(1, totalFrames, await track.getSampleRate());
+    const buffer = context.createBuffer(2, totalFrames, await track.getSampleRate());
     let offset = 0;
-    for (const chunk of chunks) {
-      buffer.getChannelData(0).set(chunk, offset);
-      offset += chunk.length;
+    for (const [left, right] of chunks) {
+      buffer.getChannelData(0).set(left, offset);
+      buffer.getChannelData(1).set(right, offset);
+      offset += left.length;
     }
-    const length = Math.ceil(buffer.duration * 16000);
-    const offline = new OfflineAudioContext(1, length, 16000);
+    const sampleRate = music ? 44100 : 16000;
+    const offline = new OfflineAudioContext(music ? 2 : 1, Math.ceil(buffer.duration * sampleRate), sampleRate);
     const source = offline.createBufferSource();
     source.buffer = buffer;
     source.connect(offline.destination);
     source.start();
     const rendered = await offline.startRendering();
-    return rendered.getChannelData(0).slice();
+    return music ? [rendered.getChannelData(0).slice(), rendered.getChannelData(1).slice()] : rendered.getChannelData(0).slice();
   } finally {
     await context.close();
   }
@@ -171,15 +170,18 @@ async function extractAudio(file) {
 async function transcribe() {
   if (!selectedFile) return;
   const thisRun = ++runId;
+  const music = document.querySelector('input[name="audio-mode"]:checked').value === 'music';
   transcribeButton.disabled = true;
   transcribeButton.textContent = 'Transcribing…';
   status.textContent = 'Reading audio from video…';
   setProgress('Preparing audio', NaN);
   try {
-    const audio = await extractAudio(selectedFile);
+    const audio = await extractAudio(selectedFile, music);
     if (thisRun !== runId) return;
-    setProgress('Loading speech model', NaN);
-    worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+    setProgress(music ? 'Loading vocals model' : 'Loading speech model', NaN);
+    worker = music
+      ? new Worker(new URL('./music-worker.js', import.meta.url), { type: 'module' })
+      : new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
     worker.onmessage = ({ data }) => {
       if (thisRun !== runId) return;
       if (data.type === 'status') status.textContent = data.message;
@@ -222,7 +224,8 @@ async function transcribe() {
       worker?.terminate();
       worker = undefined;
     };
-    worker.postMessage({ audio, sampleRate: 16000 }, [audio.buffer]);
+    if (music) worker.postMessage({ audio, sampleRate: 44100 }, audio.map((channel) => channel.buffer));
+    else worker.postMessage({ audio, sampleRate: 16000 }, [audio.buffer]);
   } catch (error) {
     if (thisRun !== runId) return;
     status.textContent = 'Could not read audio. Try an MP4 (H.264/AAC) or WebM file.';
@@ -238,6 +241,15 @@ function transcriptText() {
 
 fileInput.addEventListener('change', () => setFile(fileInput.files[0]));
 changeFile.addEventListener('click', () => fileInput.click());
+modeInputs.forEach((input) => input.addEventListener('change', () => {
+  runId++;
+  worker?.terminate();
+  worker = undefined;
+  hideProgress();
+  transcribeButton.disabled = !selectedFile;
+  transcribeButton.textContent = 'Transcribe';
+  if (selectedFile) status.textContent = input.value === 'music' ? 'Music mode ready. Vocals will be separated first.' : 'Speech mode ready.';
+}));
 dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.classList.add('dragging'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
 dropZone.addEventListener('drop', (event) => {
