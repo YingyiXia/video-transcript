@@ -46,6 +46,11 @@
             <div id="transcript-list" class="transcript-list" role="list" hidden></div>
             <div class="transcript-footer">
               <p id="status" role="status" aria-live="polite">Choose a video to begin.</p>
+              <div id="progress-wrap" class="progress-wrap" hidden>
+                <div class="progress-label"><span id="progress-stage">Preparing audio</span><span id="progress-value"></span></div>
+                <progress id="progress-bar" max="100" aria-label="Transcription progress"></progress>
+                <span id="progress-eta" class="progress-eta"></span>
+              </div>
               <div class="actions">
                 <button id="transcribe" class="primary-button" type="button" disabled>Transcribe</button>
                 <button id="copy" class="secondary-button" type="button" disabled>Copy all</button>
