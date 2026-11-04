@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",
-    "mediabunny": "^1.65.0"
+    "mediabunny": "^1.65.0",
+    "onnxruntime-web": "1.18.0"
   },
   "devDependencies": {
     "vite": "7.1.11"
