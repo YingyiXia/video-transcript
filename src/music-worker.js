@@ -8,6 +8,8 @@ const STRIDE = SEGMENT - OVERLAP;
 
 ort.env.wasm.numThreads = 1;
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/';
+let session;
+let whisper;
 
 function remaining(seconds) {
   return seconds < 60 ? `About ${Math.max(1, Math.ceil(seconds))}s remaining` : `About ${Math.ceil(seconds / 60)} min remaining`;
@@ -28,9 +30,11 @@ function resampleMono(left, right) {
 }
 
 async function separate(audio) {
-  self.postMessage({ type: 'status', message: 'Loading Demucs vocals model (166 MB on first use)…' });
-  self.postMessage({ type: 'progress', stage: 'Downloading vocals model', percent: NaN });
-  const session = await ort.InferenceSession.create(MODEL_URL, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
+  if (!session) {
+    self.postMessage({ type: 'status', message: 'Loading Demucs vocals model (166 MB on first use)…' });
+    self.postMessage({ type: 'progress', stage: 'Downloading vocals model', percent: NaN });
+    session = await ort.InferenceSession.create(MODEL_URL, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
+  }
   const length = audio[0].length;
   const total = Math.max(1, Math.ceil(length / STRIDE));
   const vocals = [new Float32Array(length), new Float32Array(length)];
@@ -59,7 +63,6 @@ async function separate(audio) {
     vocals[0][position] /= weight;
     vocals[1][position] /= weight;
   }
-  session.release();
   return resampleMono(vocals[0], vocals[1]);
 }
 
@@ -67,9 +70,11 @@ self.onmessage = async ({ data }) => {
   try {
     const vocals = await separate(data.audio);
     self.postMessage({ type: 'status', message: 'Vocals separated. Loading Whisper…' });
-    const whisper = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
-    whisper.onmessage = ({ data: message }) => self.postMessage(message);
-    whisper.onerror = (error) => self.postMessage({ type: 'error', message: error.message || 'Whisper could not start.' });
+    if (!whisper) {
+      whisper = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+      whisper.onmessage = ({ data: message }) => self.postMessage(message);
+      whisper.onerror = (error) => self.postMessage({ type: 'error', message: error.message || 'Whisper could not start.' });
+    }
     whisper.postMessage({ audio: vocals, sampleRate: 16000 }, [vocals.buffer]);
   } catch (error) {
     self.postMessage({ type: 'error', message: error?.message || 'Could not separate vocals.' });
